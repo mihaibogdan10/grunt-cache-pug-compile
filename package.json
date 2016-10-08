@@ -1,0 +1,24 @@
+{
+  "name": "grunt-cache-pug-compile",
+  "version": "1.0.0",
+  "description": "Grunt task that works grunt-contrib-pug and aims to prevent re-compilations of already compiled pug files",
+  "main": "tasks/cache-pug-compile.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mihaibogdan10/grunt-cache-pug-compile.git"
+  },
+  "keywords": [
+    "pug",
+    "cache",
+    "compile"
+  ],
+  "author": "Bogdan Mihai",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mihaibogdan10/grunt-cache-pug-compile/issues"
+  },
+  "homepage": "https://github.com/mihaibogdan10/grunt-cache-pug-compile#readme",
+  "dependencies": {
+    "async": "^2.0.1"
+  }
+}
