@@ -65,7 +65,8 @@ Here's an example config for the two tasks.
       files: [{
         expand: true,
         src: [
-          // This will be dynamically filled by cache-pug-compiler
+          // If cache-pug-compiler runs before this task, this will be REPLACED!
+          'client/{desktop,mobile}/**/*.pug'
         ],
         dest: '.tmp',
         ext: '.html'
