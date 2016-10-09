@@ -46,7 +46,8 @@ Here's an example config for the two tasks.
       },
       files: [{
         expand: true,
-        src: 'client/{desktop,mobile}/**/*.pug',
+        cwd: 'client',
+        src: '{desktop,mobile}/**/*.pug',
         dest: '.tmp',
         ext: '.html'
       }]
@@ -64,6 +65,7 @@ Here's an example config for the two tasks.
       },
       files: [{
         expand: true,
+        cwd: 'client',
         src: [
           // If cache-pug-compiler runs before this task, this will be REPLACED!
           'client/{desktop,mobile}/**/*.pug'
