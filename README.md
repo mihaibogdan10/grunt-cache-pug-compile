@@ -70,6 +70,7 @@ clean: {
     files: [{
       src: [
         '.tmp'
+        // Rules of what not to delete will be added here by cache-pug-compile
       ]
     }]
   }
