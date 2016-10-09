@@ -10,11 +10,17 @@ module.exports = function(grunt) {
 
     // Get the options passed to this taks
     var options = this.options();
+    options.pugTask = options.pugTask || 'compile';
 
     // Get a list of all pairs of (.pug, .html) files that the pug task would create
     var i, file, pairsToCompile = [];
+
     for (i = 0; i < this.files.length; i++) {
       file = this.files[i];
+
+      // Send the cwd forward, too, we'll need to remove it from the path
+      // we set in the grunt-contrib-pug
+      var cwd = file.orig.cwd;
 
       var src = file.src.filter(function (filepath) {
         // Remove nonexistent files. Warn if a file is not found.
@@ -35,7 +41,8 @@ module.exports = function(grunt) {
 
       pairsToCompile.push({
         pugPath: src[0],
-        htmlPath: file.dest
+        htmlPath: file.dest,
+        cwd: cwd
       });
     }
 
@@ -59,11 +66,19 @@ module.exports = function(grunt) {
         }
 
         // Alter the config of grunt-contrib-pug, to only compile the files that have yet to be compiled.
-        var config = grunt.config('pug.compile.files')[0];
+        var pugConfigName = 'pug.' + options.pugTask + '.files';
+        var config = grunt.config(pugConfigName)[0];
+        var pugTaskCwd = config.cwd;
         config.src = pairsToCompile.map(function (pair) {
+          if (!pair.cwd || !pugTaskCwd) return pair.pugPath;
+
+          // Remove the cwd/ from files if they both use the same cwd
+          if (pair.pugPath.indexOf(pair.cwd) === 0)
+            return pair.pugPath.substring(pair.cwd.length + 1);
+
           return pair.pugPath;
         });
-        grunt.config('pug.compile.files', [config]);
+        grunt.config(pugConfigName, [config]);
 
         // In case we're using grunt-contrib-clean to clean up the folder where all compiled pugs are
         // stored, make sure we alter the config of the clean task to not delete already compiled pugs
