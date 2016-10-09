@@ -3,11 +3,25 @@ Grunt task that works <a href="https://github.com/gruntjs/grunt-contrib-pug">gru
 
 The way it works is that it checks the last modified status of the .pug and .html pairs, and only allows the pug task to recompile pug files that have been modified more recently than their html counterparts. It dynamically changes the pug config task <i>src</i> in order to do so.
 
+## Getting Started
+
+If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
+
+```shell
+npm install grunt-cache-pug-compile --save-dev
+```
+
+Once the plugin has been installed, it may be enabled inside your Gruntfile with this line of JavaScript:
+
+```js
+grunt.loadNpmTasks('grunt-cache-pug-compile');
+```
+
 ## Important config info
 
 Note that for **cache-pug-compile** to be able to change the config of the pug and clean tasks they need to run in the same context (e.g. running the pug task with <a href="https://github.com/sindresorhus/grunt-concurrent">grunt-concurrent</a> concurrently with other tasks will spawn a new process for it, and it won't share the context with **cache-pug-compile** anymore). Also, it needs to run before the other two. E.g.:
 
-```
+```js
 grunt.registerTask('serve', function (target) {
   grunt.task.run([
     'cache-pug-compiler',
@@ -22,7 +36,7 @@ grunt.registerTask('serve', function (target) {
 ## Config
 Here's an example config for the two tasks.
 
-```
+```js
 'cache-pug-compiler': {
     cache: {
       options: {
@@ -63,7 +77,7 @@ Here's an example config for the two tasks.
 # grunt-contrib-clean support
 In case you use <a href="https://github.com/gruntjs/grunt-contrib-clean">grunt-contrib-clean</a> to clean the dest folder in between pug compile runs, you can let **cache-pug-compile** know that it should prevent deletion of compiled html files with the **cleanTask** option.
 
-```
+```js
 clean: {
   server: {
     // Needs to use this array form so that cache-pug-compile can add rules of what not to delete
