@@ -8,6 +8,9 @@ module.exports = function(grunt) {
     // Force task into async mode and grab a handle to the "done" function.
     var done = this.async();
 
+    // Get the options passed to this taks
+    var options = this.options();
+
     // Get a list of all pairs of (.pug, .html) files that the pug task would create
     var i, file, pairsToCompile = [];
     for (i = 0; i < this.files.length; i++) {
@@ -36,18 +39,13 @@ module.exports = function(grunt) {
       });
     }
 
-    // Read the last log file. It should contain information about the last grunt-contrib-pug compilation.
-    var options = this.options();
-    var lastCompile = {};
-    if (grunt.file.exists(options.log)) {
-      lastCompile = grunt.file.readJSON(options.log);
-    }
-
     async.filter(
       pairsToCompile,
       function (pair, cb) {
         async.map([pair.pugPath, pair.htmlPath], fs.stat, function (err, stats) {
-          if (err) return cb(err);
+          // Ignore fs.stat errors (e.g. when one of the two files doesn't exist).
+          // We'll recompile those pairs.
+          if (err) return cb(null, true);
 
           var pugStats = stats[0], htmlStats = stats[1];
           cb(null, pugStats.mtime >= htmlStats.mtime);
@@ -60,12 +58,23 @@ module.exports = function(grunt) {
           return done();
         }
 
-        // Alter the config of grunt-contrib-pug, to compile the files that we want it to compile.
+        // Alter the config of grunt-contrib-pug, to only compile the files that have yet to be compiled.
         var config = grunt.config('pug.compile.files')[0];
         config.src = pairsToCompile.map(function (pair) {
           return pair.pugPath;
         });
         grunt.config('pug.compile.files', [config]);
+
+        // In case we're using grunt-contrib-clean to clean up the folder where all compiled pugs are
+        // stored, make sure we alter the config of the clean task to not delete already compiled pugs
+        if (options.cleanTask) {
+          var cleanConfigName =  'clean.' + options.cleanTask + '.files';
+          config = grunt.config(cleanConfigName)[0];
+          config.src = pairsToCompile.map(function (pair) {
+            return "!" + pair.pugPath;
+          });
+          grunt.config(cleanConfigName, [config]);
+        }
 
         grunt.log.writeln(config.src.length + ' pug files passed the filter and will be compiled.');
         done();
