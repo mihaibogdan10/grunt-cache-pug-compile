@@ -3,6 +3,7 @@
 module.exports = function(grunt) {
   var fs = require('fs');
   var async = require('async');
+  var PugInheritance = require('pug-inheritance');
 
   grunt.registerMultiTask('cache-pug-compiler', 'Keep track of the result of compiled pug files.', function () {
     // Force task into async mode and grab a handle to the "done" function.
@@ -45,6 +46,26 @@ module.exports = function(grunt) {
         cwd: cwd
       });
     }
+
+
+    /**
+     * Once the .pug files that need to be compiled have been decided, we need to add
+     * all the files that include directly or indirectly any of these files.
+     * */
+    var pugInheritanceOpts = {
+      basedir: options.basedir,
+      extension: '.pug',
+      skip: 'node_modules'
+    };
+
+    var dependantFiles = [];
+
+    pairsToCompile.forEach(function(pair) {
+      var directory = options.basedir;
+      var inheritance = new PugInheritance(pair.pugPath, directory, pugInheritanceOpts);
+      dependantFiles = dependantFiles.concat(inheritance.files);
+    });
+
 
     async.filter(
       pairsToCompile,
