@@ -19,9 +19,9 @@ module.exports = function(grunt) {
     for (i = 0; i < this.files.length; i++) {
       file = this.files[i];
 
-      // Send the cwd forward, too, we'll need to remove it from the path
-      // we set in the grunt-contrib-pug
-      var cwd = file.orig.cwd;
+      // Send the dest forward, too, we'll need to add it to the clean path
+      // we set in the grunt-contrib-clean
+      var dest = file.orig.dest;
 
       var src = file.src.filter(function (filepath) {
         // Remove nonexistent files. Warn if a file is not found.
@@ -48,25 +48,6 @@ module.exports = function(grunt) {
     }
 
 
-    /**
-     * Once the .pug files that need to be compiled have been decided, we need to add
-     * all the files that include directly or indirectly any of these files.
-     * */
-    var pugInheritanceOpts = {
-      basedir: options.basedir,
-      extension: '.pug',
-      skip: 'node_modules'
-    };
-
-    var dependantFiles = [];
-
-    pairsToCompile.forEach(function(pair) {
-      var directory = options.basedir;
-      var inheritance = new PugInheritance(pair.pugPath, directory, pugInheritanceOpts);
-      dependantFiles = dependantFiles.concat(inheritance.files);
-    });
-
-
     async.filter(
       pairsToCompile,
       function (pair, cb) {
@@ -79,42 +60,73 @@ module.exports = function(grunt) {
           cb(null, pugStats.mtime >= htmlStats.mtime);
         });
       },
-      function (err, pairsToCompile) {
+      function (err, filteredPairs) {
         // In case of error, don't filter anything, let all files compile.
         if (err) {
           grunt.log.error("Error when deciding which files need to skip pug:compile" + err);
           return done();
         }
 
-        // Alter the config of grunt-contrib-pug, to only compile the files that have yet to be compiled.
-        var pugConfigName = 'pug.' + options.pugTask + '.files';
-        var config = grunt.config(pugConfigName)[0];
-        var pugTaskCwd = config.cwd;
-        config.src = pairsToCompile.map(function (pair) {
-          if (!pair.cwd || !pugTaskCwd) return pair.pugPath;
+        /**
+         * Once the .pug files that need to be compiled have been decided, we need to add
+         * all the files that include directly or indirectly any of these files.
+         * It only works in three basic cases:
+         *  -> no files need to be recompiled! (yey!)
+         *  -> 1 file was updated (compiles the files that directly or indirectly import it)
+         *  -> more files were updated, in which case we don't even bother and just compile them all
+         * */
 
-          // Remove the cwd/ from files if they both use the same cwd
-          if (pair.pugPath.indexOf(pair.cwd) === 0)
-            return pair.pugPath.substring(pair.cwd.length + 1);
 
-          return pair.pugPath;
-        });
-        grunt.config(pugConfigName, [config]);
-
-        // In case we're using grunt-contrib-clean to clean up the folder where all compiled pugs are
-        // stored, make sure we alter the config of the clean task to not delete already compiled pugs
-        if (options.cleanTask) {
-          var cleanConfigName =  'clean.' + options.cleanTask + '.files';
-          config = grunt.config(cleanConfigName)[0];
-          config.src = pairsToCompile.map(function (pair) {
-            return "!" + pair.pugPath;
-          });
-          grunt.config(cleanConfigName, [config]);
+        console.log(filteredPairs);
+        if (filteredPairs.length === 0) {
+          // no need to compile anything (yay!)
+          return _setFilesToBeCompiled([], done);
+        }
+        else if (filteredPairs.length > 1) {
+          // don't even bother and just compile them all
+          return done();
         }
 
-        grunt.log.writeln(config.src.length + ' pug files passed the filter and will be compiled.');
-        done();
+        // The more complicated case in which exactly 1 file was updated.
+        var pugInheritanceOpts = {
+          basedir: options.basedir,
+          extension: '.pug',
+          skip: 'node_modules'
+        };
+
+        var pair = pairsToCompile[0];
+        var relativePugPath = pair.pugPath;
+        if (relativePugPath.indexOf(pair.cwd) === 0) {
+          relativePugPath = relativePugPath.substring(pair.cwd.length + 1);
+        }
+
+        var inheritance = new PugInheritance(pair.pugPath, options.basedir, pugInheritanceOpts);
+        var pugsToCompile = inheritance.files.push(relativePugPath);
+        _setFilesToBeCompiled(pairsToCompile, done);
       }
     );
+
+
+    function _setFilesToBeCompiled(pugsToCompile, done) {
+      // Alter the config of grunt-contrib-pug, to only compile the files that have yet to be compiled.
+      var pugConfigName = 'pug.' + options.pugTask + '.files';
+      var config = grunt.config(pugConfigName)[0];
+      config.src = pugsToCompile;
+      grunt.config(pugConfigName, [config]);
+
+      // In case we're using grunt-contrib-clean to clean up the folder where all compiled pugs are
+      // stored, make sure we alter the config of the clean task to not delete already compiled pugs
+      if (options.cleanTask) {
+        var cleanConfigName =  'clean.' + options.cleanTask + '.files';
+        config = grunt.config(cleanConfigName)[0];
+        config.src = pugsToCompile.map(function (pugPath) {
+          return "!" + pugPath;
+        });
+        grunt.config(cleanConfigName, [config]);
+      }
+
+      grunt.log.writeln(config.src.length + ' pug files passed the filter and will be compiled.');
+      done();
+    }
   });
 };
