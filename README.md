@@ -3,6 +3,11 @@ Grunt task that works <a href="https://github.com/gruntjs/grunt-contrib-pug">gru
 
 The way it works is that it checks the last modified status of the .pug and .html pairs, and only allows the pug task to recompile pug files that have been modified more recently than their html counterparts. It dynamically changes the pug config task <i>src</i> in order to do so.
 
+ It only works in three basic cases:
+ *  no files need to be recompiled! (yey!)
+ *  1 file was updated (compiles the files that directly or indirectly import it)
+ *  more files were updated, in which case we don't even bother and just compile them all
+
 ## Getting Started
 
 If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
@@ -42,7 +47,12 @@ Here's an example config for the two tasks.
       options: {
         // Needs to hook into this clean task in order to prevent
         // compiled html filed from being deleted
-        cleanTask: 'server'
+        cleanTask: 'html'
+        // Will hook into this pug tasks and replace the src,
+        // changing what gets compiled
+        pugTask: 'compile',
+        // Used by pugInheritance
+        basedir: 'client'
       },
       files: [{
         expand: true,
@@ -82,12 +92,12 @@ In case you use <a href="https://github.com/gruntjs/grunt-contrib-clean">grunt-c
 
 ```js
 clean: {
-  server: {
-    // Needs to use this array form so that cache-pug-compile can add rules of what not to delete
+  html: {
+    // Needs to use this array form so that cache-pug-compile can add rules of what to delete
     files: [{
       src: [
-        '.tmp'
-        // Rules of what not to delete will be added here by cache-pug-compile
+        // If cache-pug-compiler runs before this task, this will be REPLACED!
+        '.tmp/**/*.html'
       ]
     }]
   }
