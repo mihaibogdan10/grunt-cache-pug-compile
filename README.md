@@ -30,7 +30,7 @@ Note that for **cache-pug-compile** to be able to change the config of the pug a
 grunt.registerTask('serve', function (target) {
   grunt.task.run([
     'cache-pug-compiler',
-    'clean:server',
+    'clean:html',
     'pug',
     // other tasks here
     'express'
