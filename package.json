@@ -1,6 +1,6 @@
 {
   "name": "grunt-cache-pug-compile",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Grunt task that works grunt-contrib-pug and aims to prevent re-compilations of already compiled pug files",
   "main": "tasks/cache-pug-compile.js",
   "repository": {
